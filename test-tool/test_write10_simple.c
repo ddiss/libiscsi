@@ -42,7 +42,8 @@ test_write10_simple(void)
 		if (maximum_transfer_length && maximum_transfer_length < i) {
 			break;
 		}
-		ret = write10(sd, 0, i * block_size,
+		/* overlap 4M RBD object boundry */
+		ret = write10(sd, 8192 - 2, i * block_size,
 			      block_size, 0, 0, 0, 0, 0, buf,
 			      EXPECT_STATUS_GOOD);
 		if (ret == -2) {
