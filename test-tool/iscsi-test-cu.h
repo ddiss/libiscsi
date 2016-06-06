@@ -312,6 +312,7 @@ void test_multipathio_simple(void);
 void test_multipathio_reset(void);
 void test_multipathio_compareandwrite(void);
 void test_mpio_async_caw(void);
+void test_mpio_async_caw_abort(void);
 
 void test_async_abort_simple(void);
 
