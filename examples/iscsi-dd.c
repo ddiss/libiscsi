@@ -344,16 +344,16 @@ void fill_xcopy_queue(struct client *client)
 		/* Initialise CSCD list with one src + one dst descriptor */
 		offset = XCOPY_DESC_OFFSET;
 		offset += populate_tgt_desc(xcopybuf + offset,
-					&client->src_tgt_desig,
-					0, client->src_blocksize);
-		offset += populate_tgt_desc(xcopybuf + offset,
 					&client->dst_tgt_desig,
 					0, client->dst_blocksize);
+		offset += populate_tgt_desc(xcopybuf + offset,
+					&client->src_tgt_desig,
+					0, client->src_blocksize);
 		tgt_desc_len = offset - XCOPY_DESC_OFFSET;
 
 		/* Initialise one segment descriptor */
 		seg_desc_len = populate_seg_desc_b2b(xcopybuf + offset, 0, 0,
-				0, 1, num_blocks, client->pos, client->pos);
+				1, 0, num_blocks, client->pos, client->pos);
 		offset += seg_desc_len;
 
 		/* Initialise the parameter list header */
