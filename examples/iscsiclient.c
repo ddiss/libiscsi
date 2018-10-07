@@ -392,6 +392,7 @@ void inquiry_cb(struct iscsi_context *iscsi, int status, void *command_data, voi
 
 	printf("Device Type is %d. VendorId:%s ProductId:%s\n", inq->device_type, inq->vendor_identification, inq->product_identification);
 	printf("Send MODESENSE6\n");
+	sleep(20);
 	if (iscsi_modesense6_task(iscsi, clnt->lun, 0, SCSI_MODESENSE_PC_CURRENT, SCSI_MODEPAGE_RETURN_ALL_PAGES, 0, 4, modesense6_cb, private_data) == NULL) {
 		printf("failed to send modesense6 command\n");
 		scsi_free_scsi_task(task);
@@ -421,6 +422,7 @@ void testunitready_cb(struct iscsi_context *iscsi, int status, void *command_dat
 	}
 
 	printf("TESTUNITREADY successful, do an inquiry on lun:%d\n", clnt->lun);
+	sleep(20);
 	if (iscsi_inquiry_task(iscsi, clnt->lun, 0, 0, 64, inquiry_cb, private_data) == NULL) {
 		printf("failed to send inquiry command : %s\n", iscsi_get_error(iscsi));
 		scsi_free_scsi_task(task);
@@ -471,6 +473,7 @@ void reportluns_cb(struct iscsi_context *iscsi, int status, void *command_data, 
 	}
 
 	printf("Will use LUN:%d\n", clnt->lun);
+	sleep(20);
 	printf("Send testunitready to lun %d\n", clnt->lun);
 	if (iscsi_testunitready_task(iscsi, clnt->lun, testunitready_cb, private_data) == NULL) {
 		printf("failed to send testunitready command : %s\n", iscsi_get_error(iscsi));
@@ -489,6 +492,7 @@ void normallogin_cb(struct iscsi_context *iscsi, int status, void *command_data 
 	}
 
 	printf("Logged in normal session, send reportluns\n");
+	sleep(20);
 	if (iscsi_reportluns_task(iscsi, 0, 16, reportluns_cb, private_data) == NULL) {
 		printf("failed to send reportluns command : %s\n", iscsi_get_error(iscsi));
 		exit(10);

@@ -325,6 +325,9 @@ int iscsi_process_target_nop_in(struct iscsi_context *iscsi,
 		return 0;
 	}
 
+	ISCSI_LOG(iscsi, 1, "dropping nop-in requiring response!\n");
+	return 0;
+
 	iscsi_send_target_nop_out(iscsi, ttt, lun);
 
 	return 0;
