@@ -30,6 +30,7 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #endif
+#include <unistd.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -590,6 +591,8 @@ iscsi_process_r2t(struct iscsi_context *iscsi, struct iscsi_pdu *pdu,
 			 struct iscsi_in_pdu *in)
 {
 	uint32_t ttt, offset, len;
+
+	sleep(100);
 
 	ttt    = scsi_get_uint32(&in->hdr[20]);
 	offset = scsi_get_uint32(&in->hdr[40]);

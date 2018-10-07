@@ -170,8 +170,8 @@ void read10_1_cb(struct iscsi_context *iscsi, int status, void *command_data, vo
 {
 	struct client_state *clnt = (struct client_state *)private_data;
 	struct scsi_task *task = command_data;
-	int i;
-	static unsigned char wb[512];
+	unsigned int i;
+	static unsigned char wb[1024 * 1024];
 
 	if (status == SCSI_STATUS_CHECK_CONDITION) {
 		printf("Read10 failed with sense key:%d ascq:%04x\n", task->sense.key, task->sense.ascq);
@@ -200,10 +200,10 @@ void read10_1_cb(struct iscsi_context *iscsi, int status, void *command_data, vo
 	}
 #else
 	printf("write the block normally\n");
-	for (i = 0;i < 512; i++) {
+	for (i = 0;i < sizeof(wb); i++) {
 		wb[i] = i & 0xff;
 	}
-	task = iscsi_write10_task(iscsi, clnt->lun, 0, wb, 512, 512,
+	task = iscsi_write10_task(iscsi, clnt->lun, 0, wb, sizeof(wb), 512,
 			0, 0, 0, 0, 0,
 			write10_cb, private_data);
 	if (task == NULL) {
@@ -635,7 +635,7 @@ int main(int argc _U_, char *argv[] _U_)
 
 	memset(&clnt, 0, sizeof(clnt));
 
-	iscsi = iscsi_create_context("iqn.2002-10.com.ronnie:client");
+	iscsi = iscsi_create_context("iqn.2007-10.com.github:sahlberg:libiscsi:iscsi-test");
 	if (iscsi == NULL) {
 		printf("Failed to create context\n");
 		exit(10);
