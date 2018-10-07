@@ -596,7 +596,12 @@ iscsi_process_r2t(struct iscsi_context *iscsi, struct iscsi_pdu *pdu,
 	len    = scsi_get_uint32(&in->hdr[44]);
 
 	pdu->datasn = 0;
+#if 0
 	iscsi_send_data_out(iscsi, pdu, ttt, offset, len);
+#else
+	printf("HACK %p r2t for ttt:%x off:%u len:%u ignored!\n",
+		iscsi, ttt, offset, len);
+#endif
 	return 0;
 }
 

@@ -74,29 +74,26 @@ void tm_at_cb(struct iscsi_context *iscsi _U_, int status _U_, void *command_dat
 }
 
 
-void synccache10_cb(struct iscsi_context *iscsi _U_, int status, void *command_data _U_, void *private_data _U_)
+void logout_cb(struct iscsi_context *iscsi _U_, int status, void *command_data _U_, void *private_data _U_)
 {
-	printf("SYNCCACHE10 status:%d\n", status);
+	printf("logout status:%d\n", status);
 }
 
 void nop_out_cb(struct iscsi_context *iscsi, int status, void *command_data, void *private_data)
 {
 	struct iscsi_data *data = command_data;
-	struct scsi_task *task;
+	int ret;
 
 	printf("NOP-IN status:%d\n", status);
 	if (data->size > 0) {
 		printf("NOP-IN data:%s\n", data->data);
 	}
-	printf("Send SYNCHRONIZECACHE10\n");
-	task = iscsi_synchronizecache10_task(iscsi, 2, 0, 0, 0, 0, synccache10_cb, private_data);
-	if (task == NULL) {
-		printf("failed to send sync cache10\n");
-		exit(10);
-	}
-	printf("send task management to try to abort the sync10 task\n");
-	if (iscsi_task_mgmt_abort_task_async(iscsi, task, tm_at_cb, private_data) != 0) {
-		printf("failed to send task management to abort the sync10 task\n");
+	sleep(2);
+	exit(100);
+	printf("Send logout\n");
+	ret = iscsi_logout_async(iscsi, logout_cb, private_data);
+	if (ret) {
+		printf("failed to send logout\n");
 		exit(10);
 	}
 }
@@ -170,8 +167,8 @@ void read10_1_cb(struct iscsi_context *iscsi, int status, void *command_data, vo
 {
 	struct client_state *clnt = (struct client_state *)private_data;
 	struct scsi_task *task = command_data;
-	int i;
-	static unsigned char wb[512];
+	unsigned int i;
+	static unsigned char wb[1024 * 1024];
 
 	if (status == SCSI_STATUS_CHECK_CONDITION) {
 		printf("Read10 failed with sense key:%d ascq:%04x\n", task->sense.key, task->sense.ascq);
@@ -190,27 +187,24 @@ void read10_1_cb(struct iscsi_context *iscsi, int status, void *command_data, vo
 	printf("...\n");
 	scsi_free_scsi_task(task);
 
-#if 0
-	printf("Finished,   wont try to write data since that will likely destroy your LUN :-(\n");
-	printf("Send NOP-OUT\n");
-	if (iscsi_nop_out_async(iscsi, nop_out_cb, (unsigned char *)"Ping!", 6, private_data) != 0) {
-		printf("failed to send nop-out\n");
-		scsi_free_scsi_task(task);
-		exit(10);
-	}
-#else
 	printf("write the block normally\n");
-	for (i = 0;i < 512; i++) {
+	for (i = 0;i < sizeof(wb); i++) {
 		wb[i] = i & 0xff;
 	}
-	task = iscsi_write10_task(iscsi, clnt->lun, 0, wb, 512, 512,
+	task = iscsi_write10_task(iscsi, clnt->lun, 0, wb, sizeof(wb), 512,
 			0, 0, 0, 0, 0,
 			write10_cb, private_data);
 	if (task == NULL) {
 		printf("failed to send write10 command\n");
 		exit(10);
 	}
-#endif
+
+	printf("HACK sending nop after write\n");
+	if (iscsi_nop_out_async(iscsi, nop_out_cb, (unsigned char *)"Ping!", 4, private_data) != 0) {
+		printf("failed to send nop-out\n");
+		scsi_free_scsi_task(task);
+		exit(10);
+	}
 }
 
 void read10_cb(struct iscsi_context *iscsi, int status, void *command_data, void *private_data)
@@ -635,7 +629,7 @@ int main(int argc _U_, char *argv[] _U_)
 
 	memset(&clnt, 0, sizeof(clnt));
 
-	iscsi = iscsi_create_context("iqn.2002-10.com.ronnie:client");
+	iscsi = iscsi_create_context("iqn.2007-10.com.github:sahlberg:libiscsi:iscsi-test");
 	if (iscsi == NULL) {
 		printf("Failed to create context\n");
 		exit(10);
