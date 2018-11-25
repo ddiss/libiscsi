@@ -232,6 +232,7 @@ iscsi_test_cu_SOURCES = iscsi-test-cu.c \
 	test_multipathio_reset.c \
 	test_multipathio_compareandwrite.c \
 	test_multipathio_async_caw.c \
+	test_multipathio_async_prout_preempt.c \
 	test_async_read.c \
 	test_async_write.c \
 	test_async_abort_simple.c \

@@ -487,6 +487,7 @@ static CU_TestInfo tests_multipathio[] = {
         { (char *)"Reset", test_multipathio_reset },
         { (char *)"CompareAndWrite", test_multipathio_compareandwrite },
         { (char *)"CompareAndWriteAsync", test_mpio_async_caw },
+	{ (char *)"ProutPreemptAsync", test_mpio_async_prout_preempt },
         CU_TEST_INFO_NULL
 };
 
