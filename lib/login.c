@@ -547,7 +547,7 @@ iscsi_login_add_authalgorithm(struct iscsi_context *iscsi, struct iscsi_pdu *pdu
 		return 0;
 	}
 
-	strncpy(str,"CHAP_A=5",MAX_STRING_SIZE);
+	strncpy(str,"CHAP_A=51",MAX_STRING_SIZE);
 	if (iscsi_pdu_add_data(iscsi, pdu, (unsigned char *)str, strlen(str)+1)
 	    != 0) {
 		iscsi_set_error(iscsi, "Out-of-memory: pdu add data failed.");
