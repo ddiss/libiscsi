@@ -601,6 +601,7 @@ static CU_TestInfo tests_iscsi_tmf[] = {
         { "AbortTaskSimpleAsync", test_async_abort_simple },
         { "LUNResetSimpleAsync", test_async_lu_reset_simple },
         { "LogoutDuringIOAsync", test_async_io_logout },
+        { "DropSessionDuringIOAsync", test_async_io_sess_drop },
         CU_TEST_INFO_NULL
 };
 

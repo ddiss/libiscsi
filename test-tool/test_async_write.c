@@ -237,3 +237,96 @@ test_async_io_logout(void)
 	CU_ASSERT_PTR_NOT_NULL(sd->iscsi_ctx);
 	free(buf);
 }
+
+void
+test_async_io_sess_drop(void)
+{
+	int i, ret;
+	struct tests_async_write_state state;
+	int blocks_per_io = 8;
+	int num_ios = 100;
+	/* IOs in flight concurrently, but all using the same src buffer */
+	unsigned char *buf;
+
+	CHECK_FOR_DATALOSS;
+	CHECK_FOR_SBC;
+	CHECK_FOR_ISCSI(sd);
+
+	memset(&state, 0, sizeof(state));
+	if (maximum_transfer_length
+	 && maximum_transfer_length < (blocks_per_io * num_ios)) {
+		CU_PASS("[SKIPPED] device too small for async IO test");
+		return;
+	}
+
+	/* IOs in flight concurrently, so need a buffer large enough for all */
+	buf = calloc(block_size * blocks_per_io, num_ios);
+	CU_ASSERT(buf != NULL);
+	if (!buf)
+		return;
+
+	iscsi_set_noautoreconnect(sd->iscsi_ctx, 1);
+
+	for (i = 0; i < num_ios; i++) {
+		uint32_t lba = i * blocks_per_io;
+		struct scsi_task *atask;
+
+		/* alternate between reads and writes */
+		if (i & 1) {
+			atask = scsi_cdb_write10(lba,
+						 blocks_per_io * block_size,
+						 block_size, 0, 0, 0, 0, 0);
+			CU_ASSERT_PTR_NOT_NULL_FATAL(atask);
+
+			ret = scsi_task_add_data_out_buffer(atask,
+						blocks_per_io * block_size,
+						&buf[lba * block_size]);
+		} else {
+			atask = scsi_cdb_read10(lba, blocks_per_io * block_size,
+					       block_size, 0, 0, 0, 0, 0);
+			CU_ASSERT_PTR_NOT_NULL_FATAL(atask);
+
+			ret = scsi_task_add_data_in_buffer(atask,
+						blocks_per_io * block_size,
+						&buf[lba * block_size]);
+		}
+		CU_ASSERT_EQUAL(ret, 0);
+
+		ret = iscsi_scsi_command_async(sd->iscsi_ctx, sd->iscsi_lun,
+					       atask, test_async_io_cb, NULL,
+					       &state);
+		CU_ASSERT_EQUAL(ret, 0);
+
+		state.io_dispatched++;
+		logging(LOG_VERBOSE, "%s dispatched: %d of %d (cmdsn=%d)",
+			test_async_io_op_name(atask->cdb[0]),
+			state.io_dispatched, num_ios, atask->cmdsn);
+	}
+
+	while (!state.logout_cmpl) {
+		struct pollfd pfd;
+
+		pfd.fd = iscsi_get_fd(sd->iscsi_ctx);
+		pfd.events = iscsi_which_events(sd->iscsi_ctx);
+
+		ret = poll(&pfd, 1, -1);
+		CU_ASSERT_NOT_EQUAL(ret, -1);
+
+		ret = iscsi_service(sd->iscsi_ctx, pfd.revents);
+		CU_ASSERT_EQUAL(ret, 0);
+
+		/* drop session after one of the IOs has completed */
+		if (state.io_completed > 0) {
+			iscsi_disconnect(sd->iscsi_ctx);
+			state.logout_cmpl++;
+			logging(LOG_VERBOSE,
+				"Session dropped following %d IO completions",
+				state.io_completed);
+		}
+	}
+
+	iscsi_destroy_context(sd->iscsi_ctx);
+	sd->iscsi_ctx = iscsi_context_login(initiatorname1, sd->iscsi_url, &sd->iscsi_lun);
+	CU_ASSERT_PTR_NOT_NULL(sd->iscsi_ctx);
+	free(buf);
+}
