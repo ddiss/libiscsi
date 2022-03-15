@@ -34,21 +34,35 @@ struct tests_async_write_state {
 	uint32_t logout_cmpl;
 };
 
+static const char *
+test_async_io_op_name(unsigned char opcode)
+{
+	switch (opcode) {
+		case SCSI_OPCODE_READ10:
+			return "READ10";
+		case SCSI_OPCODE_WRITE10:
+			return "WRITE10";
+		default:
+			return "UNEXPECTED_OP!";
+	}
+}
+
 static void
-test_async_write_cb(struct iscsi_context *iscsi __attribute__((unused)),
-		   int status, void *command_data, void *private_data)
+test_async_io_cb(struct iscsi_context *iscsi __attribute__((unused)),
+		 int status, void *command_data, void *private_data)
 {
 	struct scsi_task *atask = command_data;
+	const char *ion = test_async_io_op_name(atask->cdb[0]);
 	struct tests_async_write_state *state = private_data;
 
 	if (state->logout_cmpl) {
 		CU_ASSERT_EQUAL(status, SCSI_STATUS_CANCELLED);
-		logging(LOG_VERBOSE, "WRITE10 cancelled after logout");
+		logging(LOG_VERBOSE, "%s cancelled after logout", ion);
 		return;
 	}
 
 	state->io_completed++;
-	logging(LOG_VERBOSE, "WRITE10 completed: %d of %d (CmdSN=%d)",
+	logging(LOG_VERBOSE, "%s completed: %d of %d (CmdSN=%d)", ion,
 		state->io_completed, state->io_dispatched, atask->cmdsn);
 	CU_ASSERT_NOT_EQUAL(status, SCSI_STATUS_CHECK_CONDITION);
 
@@ -103,7 +117,7 @@ test_async_write(void)
 		CU_ASSERT_EQUAL(ret, 0);
 
 		ret = iscsi_scsi_command_async(sd->iscsi_ctx, sd->iscsi_lun,
-					       atask, test_async_write_cb, NULL,
+					       atask, test_async_io_cb, NULL,
 					       &state);
 		CU_ASSERT_EQUAL(ret, 0);
 
@@ -183,7 +197,7 @@ test_async_io_logout(void)
 		CU_ASSERT_EQUAL(ret, 0);
 
 		ret = iscsi_scsi_command_async(sd->iscsi_ctx, sd->iscsi_lun,
-					       atask, test_async_write_cb, NULL,
+					       atask, test_async_io_cb, NULL,
 					       &state);
 		CU_ASSERT_EQUAL(ret, 0);
 
